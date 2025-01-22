@@ -1,4 +1,5 @@
 import Foundation
+import OpenAI
 
 enum OpenAIError: Error, LocalizedError {
     case invalidURL
@@ -6,7 +7,6 @@ enum OpenAIError: Error, LocalizedError {
     case invalidResponse
     case invalidData
     case apiError(String)
-    case noAssistantID
     
     var errorDescription: String? {
         switch self {
@@ -20,138 +20,132 @@ enum OpenAIError: Error, LocalizedError {
             return "Invalid data received"
         case .apiError(let message):
             return "API Error: \(message)"
-        case .noAssistantID:
-            return "No Assistant ID configured"
         }
     }
 }
 
 class OpenAIClient {
-    private let apiKey: String
-    private let baseURL = "https://api.openai.com/v1"
+    private let client: OpenAI
     
     init(apiKey: String) {
-        self.apiKey = apiKey
+        self.client = OpenAI(apiToken: apiKey)
     }
     
-    private func makeRequest<T: Codable>(_ endpoint: String, method: String = "GET", body: Data? = nil) async throws -> T {
-        guard let url = URL(string: "\(baseURL)\(endpoint)") else {
-            throw OpenAIError.invalidURL
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = method
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("assistants=v2", forHTTPHeaderField: "OpenAI-Beta")
-        request.httpBody = body
-        
-        let (data, response) = try await URLSession.shared.data(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw OpenAIError.invalidResponse
-        }
-        
-        // Handle error responses
-        if !(200...299).contains(httpResponse.statusCode) {
-            if let errorResponse = try? JSONDecoder().decode(APIErrorResponse.self, from: data) {
-                throw OpenAIError.apiError(errorResponse.error.message)
+    // Non-streaming version
+    func sendMessage(_ messages: [Message], model: String = "gpt-4-turbo-preview") async throws -> String {
+        let chatMessages = messages.compactMap { message in
+            if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
+                return ChatQuery.ChatCompletionMessageParam(
+                    role: role,
+                    content: String(message.content)
+                )
             }
-            throw OpenAIError.apiError("Status code: \(httpResponse.statusCode)")
+            return nil
         }
+        
+        let query = ChatQuery(
+            messages: chatMessages,
+            model: .gpt4_o
+        )
         
         do {
-            return try JSONDecoder().decode(T.self, from: data)
+            let result = try await client.chats(query: query)
+            guard let choice = result.choices.first,
+                  case let .string(content) = choice.message.content else {
+                throw OpenAIError.invalidResponse
+            }
+            return content
         } catch {
-            print("Decoding error: \(error)")
-            print("Response data: \(String(data: data, encoding: .utf8) ?? "none")")
-            throw OpenAIError.invalidData
+            if let apiError = error as? OpenAIError {
+                throw apiError
+            }
+            throw OpenAIError.requestFailed(error)
         }
     }
     
-    // Create an assistant
-    func createAssistant(name: String, model: String, instructions: String) async throws -> Assistant {
-        let body = try JSONEncoder().encode([
-            "name": name,
-            "model": model,
-            "instructions": instructions
-        ])
+    // Streaming version
+    func streamMessage(_ messages: [Message], model: String = "gpt-4-o") -> AsyncThrowingStream<String, Error> {
+        let chatMessages = messages.compactMap { message in
+            if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
+                return ChatQuery.ChatCompletionMessageParam(
+                    role: role,
+                    content: String(message.content)
+                )
+            }
+            return nil
+        }
         
-        return try await makeRequest("/assistants", method: "POST", body: body)
-    }
-    
-    // Create a thread
-    func createThread() async throws -> OpenAIThread {
-        return try await makeRequest("/threads", method: "POST")
-    }
-    
-    // Add a message to a thread
-    func addMessage(threadId: String, content: String) async throws -> OpenAIMessage {
-        let body = try JSONEncoder().encode([
-            "role": "user",
-            "content": content
-        ])
+        let query = ChatQuery(
+            messages: chatMessages,
+            model: .gpt4_o
+        )
         
-        return try await makeRequest("/threads/\(threadId)/messages", method: "POST", body: body)
-    }
-    
-    // Run the assistant
-    func runAssistant(threadId: String, assistantId: String) async throws -> Run {
-        let body = try JSONEncoder().encode([
-            "assistant_id": assistantId
-        ])
-        
-        return try await makeRequest("/threads/\(threadId)/runs", method: "POST", body: body)
-    }
-    
-    // Get run status
-    func getRun(threadId: String, runId: String) async throws -> Run {
-        return try await makeRequest("/threads/\(threadId)/runs/\(runId)")
-    }
-    
-    // Get messages
-    func getMessages(threadId: String) async throws -> MessageList {
-        return try await makeRequest("/threads/\(threadId)/messages")
+        return AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    for try await result in client.chatsStream(query: query) {
+                        if let content = result.choices.first?.delta.content {
+                            continuation.yield(content)
+                        }
+                    }
+                    continuation.finish()
+                } catch {
+                    if let apiError = error as? OpenAIError {
+                        continuation.finish(throwing: apiError)
+                    } else {
+                        continuation.finish(throwing: OpenAIError.requestFailed(error))
+                    }
+                }
+            }
+        }
     }
 }
 
-// Response models
-struct Assistant: Codable {
-    let id: String
-    let name: String
-    let model: String
-    let instructions: String
-}
-
-struct OpenAIThread: Codable {
-    let id: String
-}
-
-struct OpenAIMessage: Codable {
-    let id: String
+// Chat completion models
+struct ChatMessage: Codable {
     let role: String
-    let content: [MessageContent]
+    let content: String
 }
 
-struct MessageContent: Codable {
-    let type: String
-    let text: TextContent
+struct ChatCompletionRequest: Codable {
+    let model: String
+    let messages: [ChatMessage]
 }
 
-struct TextContent: Codable {
-    let value: String
-}
-
-struct MessageList: Codable {
-    let data: [OpenAIMessage]
-}
-
-struct Run: Codable {
+struct ChatCompletionResponse: Codable {
+    struct Choice: Codable {
+        let index: Int
+        let message: ChatMessage
+        let finishReason: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case index
+            case message
+            case finishReason = "finish_reason"
+        }
+    }
+    
     let id: String
-    let status: String
+    let object: String
+    let created: Int
+    let model: String
+    let choices: [Choice]
+    let usage: Usage
 }
 
-// Add error response model
+struct Usage: Codable {
+    let promptTokens: Int
+    let completionTokens: Int
+    let totalTokens: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case promptTokens = "prompt_tokens"
+        case completionTokens = "completion_tokens"
+        case totalTokens = "total_tokens"
+    }
+}
+
+// Error response model
 struct APIErrorResponse: Codable {
     struct ErrorDetail: Codable {
         let message: String
