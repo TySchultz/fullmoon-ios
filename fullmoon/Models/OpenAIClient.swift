@@ -31,40 +31,40 @@ class OpenAIClient {
         self.client = OpenAI(apiToken: apiKey)
     }
     
-    // Non-streaming version
-    func sendMessage(_ messages: [Message], model: String = "gpt-4-turbo-preview") async throws -> String {
-        let chatMessages = messages.compactMap { message in
-            if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
-                return ChatQuery.ChatCompletionMessageParam(
-                    role: role,
-                    content: String(message.content)
-                )
-            }
-            return nil
-        }
-        
-        let query = ChatQuery(
-            messages: chatMessages,
-            model: .gpt4_o
-        )
-        
-        do {
-            let result = try await client.chats(query: query)
-            guard let choice = result.choices.first,
-                  case let .string(content) = choice.message.content else {
-                throw OpenAIError.invalidResponse
-            }
-            return content
-        } catch {
-            if let apiError = error as? OpenAIError {
-                throw apiError
-            }
-            throw OpenAIError.requestFailed(error)
-        }
-    }
+//    // Non-streaming version
+//    func sendMessage(_ messages: [Message], model: String = "gpt-4-turbo-preview") async throws -> String {
+//        let chatMessages = messages.compactMap { message in
+//            if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
+//                return ChatQuery.ChatCompletionMessageParam(
+//                    role: role,
+//                    content: String(message.content)
+//                )
+//            }
+//            return nil
+//        }
+//        
+//        let query = ChatQuery(
+//            messages: chatMessages,
+//            model: .gpt4_o
+//        )
+//        
+//        do {
+//            let result = try await client.chats(query: query)
+//            guard let choice = result.choices.first,
+//                  let content = choice.message.content else {
+//                throw OpenAIError.invalidResponse
+//            }
+//            return content
+//        } catch {
+//            if let apiError = error as? OpenAIError {
+//                throw apiError
+//            }
+//            throw OpenAIError.requestFailed(error)
+//        }
+//    }
     
     // Streaming version
-    func streamMessage(_ messages: [Message], model: String = "gpt-4-o") -> AsyncThrowingStream<String, Error> {
+    func streamMessage(_ messages: [Message], model: String = "gpt-4-turbo-preview") -> AsyncThrowingStream<String, Error> {
         let chatMessages = messages.compactMap { message in
             if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
                 return ChatQuery.ChatCompletionMessageParam(

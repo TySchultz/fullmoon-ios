@@ -30,17 +30,22 @@ class AssistantManager {
             var messages = thread.sortedMessages
             messages.append(Message(role: .user, content: prompt))
             
-            // Send to OpenAI
-            let response = try await client.sendMessage(messages)
+            // Use streaming response
+            let stream = client.streamMessage(messages)
+            var fullResponse = ""
             
-            if cancelled {
-                return await MainActor.run { currentOutput }
+            for try await chunk in stream {
+                if cancelled {
+                    return await MainActor.run { currentOutput }
+                }
+                
+                fullResponse += chunk
+                await MainActor.run {
+                    currentOutput = fullResponse
+                }
             }
             
-            await MainActor.run {
-                currentOutput = response
-            }
-            return response
+            return fullResponse
             
         } catch {
             print("OpenAI error: \(error.localizedDescription)")
