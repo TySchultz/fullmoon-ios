@@ -12,7 +12,7 @@ struct ChatView: View {
     @EnvironmentObject var appManager: AppManager
     @Environment(\.modelContext) var modelContext
     @Binding var currentThread: Thread?
-    @Environment(LLMEvaluator.self) var llm
+    @Environment(AssistantManager.self) var assistant
     @Namespace var bottomID
     @State var showModelPicker = false
     @State var prompt = ""
@@ -21,65 +21,38 @@ struct ChatView: View {
     @Binding var showSettings: Bool
     
     @State private var generatingThreadID: UUID?
+    @State private var errorMessage: String?
+    @State private var showError = false
 
     var isPromptEmpty: Bool {
         prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    let platformBackgroundColor: Color = {
-        #if os(iOS)
-        return Color(UIColor.secondarySystemBackground)
-        #elseif os(visionOS)
-        return Color(UIColor.separator)
-        #elseif os(macOS)
-        return Color(NSColor.secondarySystemFill)
-        #endif
-    }()
+    let platformBackgroundColor = Color(UIColor.secondarySystemBackground)
 
     var chatInput: some View {
         HStack(alignment: .bottom, spacing: 0) {
             TextField("message", text: $prompt, axis: .vertical)
                 .focused($isPromptFocused)
                 .textFieldStyle(.plain)
-            #if os(iOS) || os(visionOS)
                 .padding(.horizontal, 16)
-            #elseif os(macOS)
-                .padding(.horizontal, 12)
-                .onSubmit {
-                    handleShiftReturn()
-                }
-                .submitLabel(.send)
-            #endif
                 .padding(.vertical, 8)
-            #if os(iOS) || os(visionOS)
                 .frame(minHeight: 48)
-            #elseif os(macOS)
-                .frame(minHeight: 32)
-            #endif
-            #if os(iOS)
-            .onSubmit {
-                isPromptFocused = true
-                generate()
-            }
-            #endif
+                .onSubmit {
+                    isPromptFocused = true
+                    generate()
+                }
 
-            if llm.running {
+            if assistant.isGenerating {
                 stopButton
             } else {
                 generateButton
             }
         }
-        #if os(iOS) || os(visionOS)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(platformBackgroundColor)
         )
-        #elseif os(macOS)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(platformBackgroundColor)
-        )
-        #endif
     }
 
     var modelPickerButton: some View {
@@ -91,26 +64,15 @@ struct ChatView: View {
                 Image(systemName: "chevron.up")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                #if os(iOS) || os(visionOS)
                     .frame(width: 16)
-                #elseif os(macOS)
-                    .frame(width: 12)
-                #endif
                     .tint(.primary)
             }
-            #if os(iOS) || os(visionOS)
             .frame(width: 48, height: 48)
-            #elseif os(macOS)
-            .frame(width: 32, height: 32)
-            #endif
             .background(
                 Circle()
                     .fill(platformBackgroundColor)
             )
         }
-        #if os(macOS) || os(visionOS)
-        .buttonStyle(.plain)
-        #endif
     }
 
     var generateButton: some View {
@@ -120,49 +82,25 @@ struct ChatView: View {
             Image(systemName: "arrow.up.circle.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-            #if os(iOS) || os(visionOS)
                 .frame(width: 24, height: 24)
-            #else
-                .frame(width: 16, height: 16)
-            #endif
         }
         .disabled(isPromptEmpty)
-        #if os(iOS) || os(visionOS)
-            .padding(.trailing, 12)
-            .padding(.bottom, 12)
-        #else
-            .padding(.trailing, 8)
-            .padding(.bottom, 8)
-        #endif
-        #if os(macOS) || os(visionOS)
-        .buttonStyle(.plain)
-        #endif
+        .padding(.trailing, 12)
+        .padding(.bottom, 12)
     }
 
     var stopButton: some View {
         Button {
-            llm.stop()
+            assistant.stop()
         } label: {
             Image(systemName: "stop.circle.fill")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-            #if os(iOS) || os(visionOS)
                 .frame(width: 24, height: 24)
-            #else
-                .frame(width: 16, height: 16)
-            #endif
         }
-        .disabled(llm.cancelled)
-        #if os(iOS) || os(visionOS)
-            .padding(.trailing, 12)
-            .padding(.bottom, 12)
-        #else
-            .padding(.trailing, 8)
-            .padding(.bottom, 8)
-        #endif
-        #if os(macOS) || os(visionOS)
-        .buttonStyle(.plain)
-        #endif
+        .disabled(assistant.cancelled)
+        .padding(.trailing, 12)
+        .padding(.bottom, 12)
     }
 
     var chatTitle: String {
@@ -197,71 +135,35 @@ struct ChatView: View {
                 .padding()
             }
             .navigationTitle(chatTitle)
-            #if os(iOS) || os(visionOS)
-                .navigationBarTitleDisplayMode(.inline)
-            #endif
-                .sheet(isPresented: $showModelPicker) {
-                    NavigationStack {
-                        ModelsSettingsView()
-                            .environment(llm)
-                        #if os(visionOS)
-                            .toolbar {
-                                ToolbarItem(placement: .topBarLeading) {
-                                    Button(action: { showModelPicker.toggle() }) {
-                                        Image(systemName: "xmark")
-                                    }
-                                }
-                            }
-                        #endif
-                    }
-                    #if os(iOS)
-                    .presentationDragIndicator(.visible)
-                    .if(appManager.userInterfaceIdiom == .phone) { view in
-                        view.presentationDetents([.fraction(0.4)])
-                    }
-                    #elseif os(macOS)
-                    .toolbar {
-                        ToolbarItem(placement: .destructiveAction) {
-                            Button(action: { showModelPicker.toggle() }) {
-                                Text("close")
-                            }
-                        }
-                    }
-                    #endif
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showModelPicker) {
+                NavigationStack {
+                    ModelsSettingsView()
+                        .environment(assistant)
                 }
-                .toolbar {
-                    #if os(iOS) || os(visionOS)
-                    if appManager.userInterfaceIdiom == .phone {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button(action: {
-                                appManager.playHaptic()
-                                showChats.toggle()
-                            }) {
-                                Image(systemName: "list.bullet")
-                            }
-                        }
-                    }
-
-                    ToolbarItem(placement: .topBarTrailing) {
+                .presentationDragIndicator(.visible)
+                .if(appManager.userInterfaceIdiom == .phone) { view in
+                    view.presentationDetents([.fraction(0.4)])
+                }
+            }
+            .toolbar {
+                if appManager.userInterfaceIdiom == .phone {
+                    ToolbarItem(placement: .topBarLeading) {
                         Button(action: {
                             appManager.playHaptic()
-                            showSettings.toggle()
+                            showChats.toggle()
                         }) {
-                            Image(systemName: "gear")
+                            Image(systemName: "list.bullet")
                         }
                     }
-                    #elseif os(macOS)
-                    ToolbarItem(placement: .primaryAction) {
-                        Button(action: {
-                            appManager.playHaptic()
-                            showSettings.toggle()
-                        }) {
-                            Label("settings", systemImage: "gear")
-                        }
-                    }
-                    #endif
                 }
+            }
         }
+        .alert("Error", isPresented: $showError, actions: {
+            Button("OK", role: .cancel) {}
+        }, message: {
+            Text(errorMessage ?? "An unknown error occurred")
+        })
     }
 
     private func generate() {
@@ -272,41 +174,41 @@ struct ChatView: View {
                 modelContext.insert(newThread)
                 try? modelContext.save()
             }
-
+            
             if let currentThread = currentThread {
-                generatingThreadID = currentThread.id
-                Task {
+                Task { @MainActor in
+                    generatingThreadID = currentThread.id
                     let message = prompt
                     prompt = ""
                     appManager.playHaptic()
                     sendMessage(Message(role: .user, content: message, thread: currentThread))
                     isPromptFocused = true
-                    if let modelName = appManager.currentModelName {
-                        let output = await llm.generate(modelName: modelName, thread: currentThread, systemPrompt: appManager.systemPrompt)
+                    
+                    do {
+                        let output = try await assistant.generate(
+                            thread: currentThread,
+                            prompt: message,
+                            assistantId: appManager.openAIAssistantId
+                        )
                         sendMessage(Message(role: .assistant, content: output, thread: currentThread))
-                        generatingThreadID = nil
+                    } catch {
+                        errorMessage = error.localizedDescription
+                        showError = true
                     }
+                    
+                    generatingThreadID = nil
                 }
             }
         }
     }
 
     private func sendMessage(_ message: Message) {
-        appManager.playHaptic()
-        modelContext.insert(message)
-        try? modelContext.save()
-    }
-
-    #if os(macOS)
-    private func handleShiftReturn() {
-        if NSApp.currentEvent?.modifierFlags.contains(.shift) == true {
-            prompt.append("\n")
-            isPromptFocused = true
-        } else {
-            generate()
+        Task { @MainActor in
+            appManager.playHaptic()
+            modelContext.insert(message)
+            try? modelContext.save()
         }
     }
-    #endif
 }
 
 #Preview {

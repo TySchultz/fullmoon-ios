@@ -18,6 +18,8 @@ class AppManager: ObservableObject {
     @AppStorage("shouldPlayHaptics") var shouldPlayHaptics = true
     @AppStorage("numberOfVisits") var numberOfVisits = 0
     @AppStorage("numberOfVisitsOfLastRequest") var numberOfVisitsOfLastRequest = 0
+    @AppStorage("openAIApiKey") var openAIApiKey: String = ""
+    @AppStorage("openAIAssistantId") var openAIAssistantId: String = ""
     
     var userInterfaceIdiom: LayoutType {
         #if os(visionOS)
@@ -42,6 +44,10 @@ class AppManager: ObservableObject {
             saveInstalledModelsToUserDefaults()
         }
     }
+    
+    lazy var openAIClient: OpenAIClient = {
+        OpenAIClient(apiKey: openAIApiKey)
+    }()
     
     init() {
         loadInstalledModelsFromUserDefaults()
@@ -155,6 +161,7 @@ final class Thread: Sendable {
     @Attribute(.unique) var id: UUID
     var title: String?
     var timestamp: Date
+    var openAIThreadId: String?
     
     @Relationship var messages: [Message] = []
     

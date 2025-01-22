@@ -11,7 +11,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var appManager: AppManager
     @Environment(\.modelContext) var modelContext
-    @Environment(LLMEvaluator.self) var llm
+    @Environment(AssistantManager.self) var assistant
     @State var showOnboarding = false
     @State var showSettings = false
     @State var showChats = false
@@ -24,9 +24,6 @@ struct ContentView: View {
                 // iPad
                 NavigationSplitView {
                     ChatsListView(currentThread: $currentThread, isPromptFocused: $isPromptFocused)
-                    #if os(macOS)
-                    .navigationSplitViewColumnWidth(min: 240, ideal: 240, max: 320)
-                    #endif
                 } detail: {
                     ChatView(currentThread: $currentThread, isPromptFocused: $isPromptFocused, showChats: $showChats, showSettings: $showSettings)
                 }
@@ -36,16 +33,12 @@ struct ContentView: View {
             }
         }
         .environmentObject(appManager)
-        .environment(llm)
+        .environment(assistant)
         .task {
             if appManager.installedModels.count == 0 {
                 showOnboarding.toggle()
             } else {
                 isPromptFocused = true
-                // load the model
-                if let modelName = appManager.currentModelName {
-                    _ = try? await llm.load(modelName: modelName)
-                }
             }
         }
         .if(appManager.userInterfaceIdiom == .phone) { view in
@@ -71,7 +64,7 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsView(currentThread: $currentThread)
                 .environmentObject(appManager)
-                .environment(llm)
+                .environment(assistant)
                 .presentationDragIndicator(.hidden)
                 .if(appManager.userInterfaceIdiom == .phone) { view in
                     view.presentationDetents([.medium])
@@ -79,13 +72,10 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showOnboarding, onDismiss: dismissOnboarding) {
             OnboardingView(showOnboarding: $showOnboarding)
-                .environment(llm)
+                .environment(assistant)
                 .interactiveDismissDisabled(appManager.installedModels.count == 0)
             
         }
-        #if !os(visionOS)
-        .tint(appManager.appTintColor.getColor())
-        #endif
         .fontDesign(appManager.appFontDesign.getFontDesign())
         .environment(\.dynamicTypeSize, appManager.appFontSize.getFontSize())
         .fontWidth(appManager.appFontWidth.getFontWidth())
