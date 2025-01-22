@@ -89,21 +89,7 @@ struct OnboardingView: View {
                 .padding(.horizontal, 24)
                 
                 Spacer()
-                
-                NavigationLink(destination: OnboardingInstallModelView(showOnboarding: $showOnboarding)) {
-                    Text("get started")
-                        #if os(iOS) || os(visionOS)
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        #endif
-                        #if os(iOS)
-                        .foregroundStyle(.background)
-                        #endif
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .padding(.horizontal)
+               
             }
             .padding()
             .navigationTitle("welcome")

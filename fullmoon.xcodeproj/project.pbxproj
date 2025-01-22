@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		106165162D4081B400176785 /* OpenAI in Frameworks */ = {isa = PBXBuildFile; productRef = 106165152D4081B400176785 /* OpenAI */; };
 		860F26A42CBC31D6004E8D40 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = 860F26A32CBC31D6004E8D40 /* MarkdownUI */; };
-		869B97622D0DD46B0078DF5A /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 869B97612D0DD46B0078DF5A /* MLXLMCommon */; };
-		869B97642D0DD4D80078DF5A /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 869B97632D0DD4D80078DF5A /* MLXLLM */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,8 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				869B97642D0DD4D80078DF5A /* MLXLLM in Frameworks */,
-				869B97622D0DD46B0078DF5A /* MLXLMCommon in Frameworks */,
+				106165162D4081B400176785 /* OpenAI in Frameworks */,
 				860F26A42CBC31D6004E8D40 /* MarkdownUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,8 +94,7 @@
 			name = fullmoon;
 			packageProductDependencies = (
 				860F26A32CBC31D6004E8D40 /* MarkdownUI */,
-				869B97612D0DD46B0078DF5A /* MLXLMCommon */,
-				869B97632D0DD4D80078DF5A /* MLXLLM */,
+				106165152D4081B400176785 /* OpenAI */,
 			);
 			productName = fullmoon;
 			productReference = 860E9CCE2CB055B000C5BB52 /* fullmoon.app */;
@@ -128,8 +125,8 @@
 			mainGroup = 860E9CC52CB055B000C5BB52;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				860E9CE22CB0564600C5BB52 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */,
 				860F26A22CBC31D6004E8D40 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				106165142D4081B400176785 /* XCRemoteSwiftPackageReference "OpenAI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 860E9CCF2CB055B000C5BB52 /* Products */;
@@ -196,6 +193,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -257,6 +255,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -284,6 +283,7 @@
 				CODE_SIGN_ENTITLEMENTS = fullmoon/fullmoon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"fullmoon/Preview Content\"";
 				DEVELOPMENT_TEAM = 6B6QHT3AN6;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -330,6 +330,7 @@
 				CODE_SIGN_ENTITLEMENTS = fullmoon/fullmoon.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 6;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"fullmoon/Preview Content\"";
 				DEVELOPMENT_TEAM = 6B6QHT3AN6;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -392,12 +393,12 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		860E9CE22CB0564600C5BB52 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */ = {
+		106165142D4081B400176785 /* XCRemoteSwiftPackageReference "OpenAI" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ml-explore/mlx-swift-examples/";
+			repositoryURL = "https://github.com/MacPaw/OpenAI";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.21.2;
+				minimumVersion = 0.3.0;
 			};
 		};
 		860F26A22CBC31D6004E8D40 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
@@ -411,20 +412,15 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		106165152D4081B400176785 /* OpenAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 106165142D4081B400176785 /* XCRemoteSwiftPackageReference "OpenAI" */;
+			productName = OpenAI;
+		};
 		860F26A32CBC31D6004E8D40 /* MarkdownUI */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 860F26A22CBC31D6004E8D40 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
 			productName = MarkdownUI;
-		};
-		869B97612D0DD46B0078DF5A /* MLXLMCommon */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 860E9CE22CB0564600C5BB52 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
-			productName = MLXLMCommon;
-		};
-		869B97632D0DD4D80078DF5A /* MLXLLM */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 860E9CE22CB0564600C5BB52 /* XCRemoteSwiftPackageReference "mlx-swift-examples" */;
-			productName = MLXLLM;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
