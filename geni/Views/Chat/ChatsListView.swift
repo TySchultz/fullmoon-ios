@@ -100,9 +100,6 @@ struct ChatsListView: View {
                             selection = nil
                             // create new thread
                             setCurrentThread(nil)
-
-                            // ask for review if appropriate
-                            requestReviewIfAppropriate()
                         }) {
                             Image(systemName: "plus")
                         }
@@ -139,13 +136,6 @@ struct ChatsListView: View {
             search.isEmpty || thread.messages.contains { message in
                 message.content.localizedCaseInsensitiveContains(search)
             }
-        }
-    }
-
-    func requestReviewIfAppropriate() {
-        if appManager.numberOfVisits - appManager.numberOfVisitsOfLastRequest >= 5 {
-            requestReview() // can only be prompted if the user hasn't given a review in the last year, so it will prompt again when apple deems appropriate
-            appManager.numberOfVisitsOfLastRequest = appManager.numberOfVisits
         }
     }
 

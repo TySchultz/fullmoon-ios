@@ -22,10 +22,10 @@ struct OnboardingView: View {
                         .frame(width: 64, height: 64)
                     
                     VStack(spacing: 4) {
-                        Text("fullmoon")
+                        Text("Geni")
                             .font(.title)
                             .fontWeight(.semibold)
-                        Text("chat with private and local large language models")
+                        Text("chat with private and secure \nlarge language models")
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
@@ -38,7 +38,7 @@ struct OnboardingView: View {
                         VStack(alignment: .leading) {
                             Text("fast")
                                 .font(.headline)
-                            Text("optimized for apple silicon")
+                            Text("choose your models for speed or smarts")
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                         }
@@ -55,7 +55,7 @@ struct OnboardingView: View {
                         VStack(alignment: .leading) {
                             Text("private")
                                 .font(.headline)
-                            Text("runs locally on your device")
+                            Text("Full SOC 2 Type 2 security. Your messages are safe.")
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                         }
@@ -89,7 +89,19 @@ struct OnboardingView: View {
                 .padding(.horizontal, 24)
                 
                 Spacer()
-               
+                
+                Button(action: {
+                    showOnboarding = false
+                }) {
+                    Text("Get Started")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.blue)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal, 24)
             }
             .padding()
             .navigationTitle("welcome")

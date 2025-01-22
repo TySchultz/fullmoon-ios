@@ -1,6 +1,6 @@
 //
-//  fullmoonApp.swift
-//  fullmoon
+//  GeniApp.swift
+//  Geni
 //
 //  Created by Jordan Singer on 10/4/24.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct fullmoonApp: App {
+struct GeniApp: App {
     @StateObject var appManager = AppManager()
     @State var assistant: AssistantManager?
 
