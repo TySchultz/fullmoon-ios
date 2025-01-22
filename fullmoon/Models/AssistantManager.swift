@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import OpenAI
 
 @Observable
 class AssistantManager {
@@ -7,9 +8,14 @@ class AssistantManager {
     var isGenerating = false
     var currentOutput = ""
     var cancelled = false
+    var currentModel: Model = .gpt4_o
     
     init(client: OpenAIClient) {
         self.client = client
+    }
+    
+    func updateModel(_ model: Model) {
+        currentModel = model
     }
     
     func generate(thread: Thread, prompt: String, assistantId: String) async throws -> String {
@@ -30,8 +36,8 @@ class AssistantManager {
             var messages = thread.sortedMessages
             messages.append(Message(role: .user, content: prompt))
             
-            // Use streaming response
-            let stream = client.streamMessage(messages)
+            // Use streaming response with current model
+            let stream = client.streamMessage(messages, model: currentModel)
             var fullResponse = ""
             
             for try await chunk in stream {

@@ -64,7 +64,7 @@ class OpenAIClient {
 //    }
     
     // Streaming version
-    func streamMessage(_ messages: [Message], model: String = "gpt-4-turbo-preview") -> AsyncThrowingStream<String, Error> {
+    func streamMessage(_ messages: [Message], model: Model = .gpt4_o) -> AsyncThrowingStream<String, Error> {
         let chatMessages = messages.compactMap { message in
             if let role = ChatQuery.ChatCompletionMessageParam.Role(rawValue: message.role.rawValue) {
                 return ChatQuery.ChatCompletionMessageParam(
@@ -77,7 +77,7 @@ class OpenAIClient {
         
         let query = ChatQuery(
             messages: chatMessages,
-            model: .gpt4_o
+            model: model
         )
         
         return AsyncThrowingStream { continuation in

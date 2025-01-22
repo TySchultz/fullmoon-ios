@@ -156,6 +156,15 @@ struct ChatView: View {
                             Image(systemName: "list.bullet")
                         }
                     }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: {
+                            appManager.playHaptic()
+                            showSettings.toggle()
+                        }) {
+                            Image(systemName: "gear")
+                        }
+                    }
                 }
             }
         }

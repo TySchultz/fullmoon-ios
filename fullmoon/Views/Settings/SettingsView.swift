@@ -16,17 +16,22 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
+                    SecureField("OpenAI API Key", text: $appManager.openAIApiKey)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("API Configuration")
+                } footer: {
+                    Text("Your OpenAI API key is stored securely in the keychain")
+                }
+
+                Section {
                     NavigationLink(destination: AppearanceSettingsView()) {
                         Label("appearance", systemImage: "paintpalette")
                     }
                     
                     NavigationLink(destination: ChatsSettingsView(currentThread: $currentThread)) {
                         Label("chats", systemImage: "message")
-                    }
-                    
-                    NavigationLink(destination: ModelsSettingsView()) {
-                        Label("models", systemImage: "arrow.down.circle")
-                            .badge(appManager.modelDisplayName(appManager.currentModelName ?? ""))
                     }
                 }
                 
